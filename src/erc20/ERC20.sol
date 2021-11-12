@@ -1,7 +1,5 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.0;
-
-import "./ERC20.sol";
 
 /// @notice Modern and gas efficient ERC20 + EIP-2612 implementation.
 /// @author Modified from Uniswap (https://github.com/Uniswap/uniswap-v2-core/blob/master/contracts/UniswapV2ERC20.sol)
@@ -15,7 +13,7 @@ contract ERC20 {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
     /*///////////////////////////////////////////////////////////////
-                             METADATA STORAGE`
+                             METADATA STORAGE
     //////////////////////////////////////////////////////////////*/
 
     string public name;
@@ -54,17 +52,12 @@ contract ERC20 {
         symbol = _symbol;
         decimals = _decimals;
 
-        uint256 chainId;
-        assembly {
-            chainId := chainid()
-        }
-
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256(bytes(name)),
                 keccak256(bytes("1")),
-                chainId,
+                block.chainid,
                 address(this)
             )
         );
@@ -73,17 +66,23 @@ contract ERC20 {
     /*///////////////////////////////////////////////////////////////
                               ERC20 LOGIC
     //////////////////////////////////////////////////////////////*/
+
     function approve(address spender, uint256 value) external returns (bool) {
         allowance[msg.sender][spender] = value;
 
-        emit Approval(spender, spender, value);
+        emit Approval(msg.sender, spender, value);
 
         return true;
     }
 
     function transfer(address to, uint256 value) external returns (bool) {
         balanceOf[msg.sender] -= value;
-        balanceOf[to] += value;
+
+        // This is safe because the sum of all user
+        // balances can't exceed type(uint256).max!
+        unchecked {
+            balanceOf[to] += value;
+        }
 
         emit Transfer(msg.sender, to, value);
 
@@ -100,7 +99,12 @@ contract ERC20 {
         }
 
         balanceOf[from] -= value;
-        balanceOf[to] += value;
+
+        // This is safe because the sum of all user
+        // balances can't exceed type(uint256).max!
+        unchecked {
+            balanceOf[to] += value;
+        }
 
         emit Transfer(from, to, value);
 
@@ -135,7 +139,7 @@ contract ERC20 {
 
         allowance[recoveredAddress][spender] = value;
 
-        emit Approval(spender, spender, value);
+        emit Approval(owner, spender, value);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -144,14 +148,24 @@ contract ERC20 {
 
     function _mint(address to, uint256 value) internal {
         totalSupply += value;
-        balanceOf[to] += value;
+
+        // This is safe because the sum of all user
+        // balances can't exceed type(uint256).max!
+        unchecked {
+            balanceOf[to] += value;
+        }
 
         emit Transfer(address(0), to, value);
     }
 
     function _burn(address from, uint256 value) internal {
         balanceOf[from] -= value;
-        totalSupply -= value;
+
+        // This is safe because a user won't ever
+        // have a balance larger than totalSupply!
+        unchecked {
+            totalSupply -= value;
+        }
 
         emit Transfer(from, address(0), value);
     }

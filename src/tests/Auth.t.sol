@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.6;
 
-import "ds-test/test.sol";
-import "../auth/Auth.sol";
+import {DSTestPlus} from "./utils/DSTestPlus.sol";
+import {RequiresAuth} from "./utils/RequiresAuth.sol";
 
-contract FakeVault is Auth {
-    function access() public view auth {}
-}
+import {Auth, Authority} from "../auth/Auth.sol";
 
 contract BooleanAuthority is Authority {
     bool yes;
@@ -24,38 +22,46 @@ contract BooleanAuthority is Authority {
     }
 }
 
-contract AuthTest is DSTest {
-    FakeVault vault;
+contract AuthTest is DSTestPlus {
+    RequiresAuth requiresAuth;
 
     function setUp() public {
-        vault = new FakeVault();
+        requiresAuth = new RequiresAuth();
     }
 
-    function testFail_non_owner_1() public {
-        vault.setOwner(address(0));
-        vault.access();
+    function invariantOwner() public {
+        assertEq(requiresAuth.owner(), self);
     }
 
-    function testFail_non_owner_2() public {
-        vault.setOwner(address(0));
-        vault.setOwner(address(0));
+    function invariantAuthority() public {
+        assertEq(address(requiresAuth.authority()), address(0));
     }
 
-    function test_accepting_authority() public {
-        vault.setAuthority(Authority(address(new BooleanAuthority(true))));
-        vault.setOwner(address(0));
-        vault.access();
+    function testFailNonOwner1() public {
+        requiresAuth.setOwner(address(0));
+        requiresAuth.updateFlag();
     }
 
-    function testFail_rejecting_authority_1() public {
-        vault.setAuthority(Authority(address(new BooleanAuthority(false))));
-        vault.setOwner(address(0));
-        vault.access();
+    function testFailNonOwner2() public {
+        requiresAuth.setOwner(address(0));
+        requiresAuth.setOwner(address(0));
     }
 
-    function testFail_rejecting_authority_2() public {
-        vault.setAuthority(Authority(address(new BooleanAuthority(false))));
-        vault.setOwner(address(0));
-        vault.setOwner(address(0));
+    function testFailRejectingAuthority1() public {
+        requiresAuth.setAuthority(Authority(address(new BooleanAuthority(false))));
+        requiresAuth.setOwner(address(0));
+        requiresAuth.updateFlag();
+    }
+
+    function testFailRejectingAuthority2() public {
+        requiresAuth.setAuthority(Authority(address(new BooleanAuthority(false))));
+        requiresAuth.setOwner(address(0));
+        requiresAuth.setOwner(address(0));
+    }
+
+    function testAcceptingOwner() public {
+        requiresAuth.setAuthority(Authority(address(new BooleanAuthority(true))));
+        requiresAuth.setOwner(address(0));
+        requiresAuth.updateFlag();
     }
 }

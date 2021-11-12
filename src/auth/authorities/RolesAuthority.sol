@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.7.0;
 
-import "../Auth.sol";
+import {Auth, Authority} from "../Auth.sol";
 
-/// @notice An Authority for up to 256 roles.
-/// @author Modified from DappHub (https://github.com/dapphub/ds-roles/blob/master/src/roles.sol)
+/// @notice Role based Authority that supports up to 256 roles.
+/// @author Modified from Dappsys (https://github.com/dapphub/ds-roles/blob/master/src/roles.sol)
 contract RolesAuthority is Auth, Authority {
     /*///////////////////////////////////////////////////////////////
                                   EVENTS
@@ -74,7 +74,7 @@ contract RolesAuthority is Auth, Authority {
                        USER/ROLE SETTER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function setRootUser(address who, bool enabled) external auth {
+    function setRootUser(address who, bool enabled) external requiresAuth {
         rootUsers[who] = enabled;
 
         emit UserRootUpdated(who, enabled);
@@ -84,13 +84,13 @@ contract RolesAuthority is Auth, Authority {
         address who,
         uint8 role,
         bool enabled
-    ) public auth {
+    ) public requiresAuth {
         bytes32 lastRoles = userRoles[who];
         bytes32 shifted = bytes32(uint256(uint256(2)**uint256(role)));
         if (enabled) {
             userRoles[who] = lastRoles | shifted;
         } else {
-            userRoles[who] = lastRoles & BITNOT(shifted);
+            userRoles[who] = lastRoles & ~shifted;
         }
 
         emit UserRoleUpdated(who, role, enabled);
@@ -100,7 +100,7 @@ contract RolesAuthority is Auth, Authority {
         address code,
         bytes4 sig,
         bool enabled
-    ) public auth {
+    ) public requiresAuth {
         publicCapabilities[code][sig] = enabled;
 
         emit PublicCapabilityUpdated(code, sig, enabled);
@@ -111,23 +111,15 @@ contract RolesAuthority is Auth, Authority {
         address code,
         bytes4 sig,
         bool enabled
-    ) public auth {
+    ) public requiresAuth {
         bytes32 lastRoles = roleCapabilities[code][sig];
         bytes32 shifted = bytes32(uint256(uint256(2)**uint256(role)));
         if (enabled) {
             roleCapabilities[code][sig] = lastRoles | shifted;
         } else {
-            roleCapabilities[code][sig] = lastRoles & BITNOT(shifted);
+            roleCapabilities[code][sig] = lastRoles & ~shifted;
         }
 
         emit RoleCapabilityUpdated(role, code, sig, enabled);
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                               INTERNAL UTILS
-    //////////////////////////////////////////////////////////////*/
-
-    function BITNOT(bytes32 input) internal pure returns (bytes32 output) {
-        return (input ^ bytes32(type(uint256).max));
     }
 }

@@ -1,13 +1,17 @@
 {
   "name": "@rari-capital/solmate",
-  "version": "1.2.0",
-  "description": "Modern building blocks and mixins for smart contract development.",
+  "license": "AGPL-3.0-only",
+  "version": "3.2.1",
+  "description": "Modern, opinionated and gas optimized building blocks for smart contract development.",
   "files": [
     "src/**/*.sol"
   ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Rari-Capital/solmate.git"
+  },
+  "scripts": {
+    "lint": "prettier --write src/**/*.sol"
   },
   "devDependencies": {
     "prettier": "^2.3.1",

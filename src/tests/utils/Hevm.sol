@@ -1,5 +1,6 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity 0.8.6;
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity >=0.7.0;
+pragma abicoder v2;
 
 interface Hevm {
     function warp(uint256) external;
@@ -11,6 +12,8 @@ interface Hevm {
         bytes32,
         bytes32
     ) external;
+
+    function load(address, bytes32) external returns (bytes32);
 
     function sign(uint256, bytes32)
         external

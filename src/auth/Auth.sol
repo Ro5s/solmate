@@ -1,16 +1,16 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.7.0;
 
 /// @notice Provides a flexible and updatable auth pattern which is completely separate from application logic.
-/// @author Modified from DappHub (https://github.com/dapphub/ds-auth/blob/master/src/auth.sol)
+/// @author Modified from Dappsys (https://github.com/dapphub/ds-auth/blob/master/src/auth.sol)
 abstract contract Auth {
     /*///////////////////////////////////////////////////////////////
                                   EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    event LogSetAuthority(Authority indexed authority);
+    event AuthorityUpdated(Authority indexed authority);
 
-    event LogSetOwner(address indexed owner);
+    event OwnerUpdated(address indexed owner);
 
     /*///////////////////////////////////////////////////////////////
                        OWNER AND AUTHORITY STORAGE
@@ -22,41 +22,52 @@ abstract contract Auth {
 
     constructor() {
         owner = msg.sender;
-        emit LogSetOwner(msg.sender);
+
+        emit OwnerUpdated(msg.sender);
     }
 
     /*///////////////////////////////////////////////////////////////
                   OWNER AND AUTHORITY SETTER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    function setOwner(address owner_) external auth {
-        owner = owner_;
-        emit LogSetOwner(owner);
+
+    function setOwner(address newOwner) external requiresAuth {
+        owner = newOwner;
+
+        emit OwnerUpdated(owner);
     }
 
-    function setAuthority(Authority authority_) external auth {
-        authority = authority_;
-        emit LogSetAuthority(authority);
+    function setAuthority(Authority newAuthority) external requiresAuth {
+        authority = newAuthority;
+
+        emit AuthorityUpdated(authority);
     }
 
     /*///////////////////////////////////////////////////////////////
                         AUTHORIZATION LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    modifier auth() {
+    modifier requiresAuth() {
         require(isAuthorized(msg.sender, msg.sig), "UNAUTHORIZED");
+
         _;
     }
 
     function isAuthorized(address src, bytes4 sig) internal view returns (bool) {
         if (src == address(this)) {
             return true;
-        } else if (src == owner) {
-            return true;
-        } else if (authority == Authority(address(0))) {
-            return false;
-        } else {
-            return authority.canCall(src, address(this), sig);
         }
+
+        if (src == owner) {
+            return true;
+        }
+
+        Authority _authority = authority;
+
+        if (_authority == Authority(address(0))) {
+            return false;
+        }
+
+        return _authority.canCall(src, address(this), sig);
     }
 }
 
